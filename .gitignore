@@ -22,21 +22,94 @@
 
 # misc
 .DS_Store
-*.pem
+Thumbs.db
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
+*.log
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-.env*.local
+
+# vercel (project link, env cache, build output)
+.vercel
+.vercel/
+.now/
+
+# ==============================================================================
+# SECRETS — never commit
+# ==============================================================================
+
+# dotenv (all variants)
+.env
+.env.*
+.env.local
+.env.*.local
+!.env.example
+!.env.*.example
+
+# certificate / key files
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+id_ecdsa*
+id_dsa*
+*.ppk
+
+# common credential files
+credentials.json
+credentials.yaml
+credentials.yml
+secrets.json
+secrets.yaml
+secrets.yml
+service-account*.json
+*-service-account.json
+*credentials*.json
+gcloud-key.json
+firebase-adminsdk*.json
+.aws/credentials
+.aws/config
+.npmrc
+.pypirc
+.netrc
+
+# secret folders
+/secrets/
+/.secrets/
+/private/
+/.private/
+/keys/
+
+# AI provider key files
+.anthropic
+.openai
+.huggingface
+.cohere
+
+# Vercel / Neon / Blob token caches
+.vercel/.env*
+.neon/
+
+# editor / IDE local secrets
+.idea/workspace.xml
+.idea/tasks.xml
+.vscode/settings.local.json
+*.local.json
+
+# backup files (often contain pasted-in secrets)
+*.bak
+*.backup
+*.orig
+*.swp
+*.swo
+*~
