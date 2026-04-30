@@ -20,6 +20,9 @@ export default function Nav() {
           <Link href="/library" className="hover:text-zinc-900 dark:hover:text-zinc-100">
             템플릿
           </Link>
+          <Link href="/dashboard" className="hover:text-zinc-900 dark:hover:text-zinc-100">
+            대시보드
+          </Link>
         </div>
         <Link
           href="/studies/new"

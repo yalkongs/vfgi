@@ -1,0 +1,1 @@
+ALTER TABLE "insight" ADD COLUMN "evidence_texts" text[] DEFAULT '{}';

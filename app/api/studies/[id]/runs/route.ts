@@ -12,8 +12,9 @@ import {
 import { eq, desc, inArray } from "drizzle-orm";
 import { samplePanel, type PanelFilters } from "@/lib/personaSampler";
 import { runVFGI, type RunContext } from "@/lib/orchestrator";
-import { makeStream } from "@/lib/eventStream";
+import { makeStream, type FGIEvent } from "@/lib/eventStream";
 import { modelTagsForRun } from "@/lib/modelRouter";
+import { computeRealismScores } from "@/lib/agents/realismJudge";
 import crypto from "node:crypto";
 
 export const runtime = "nodejs";
@@ -23,6 +24,8 @@ type RunBody = {
   filtersOverride?: PanelFilters;
   compareGroup?: string;
   compareLabel?: string;
+  precisionMode?: boolean;
+  naturalDistribution?: boolean;
 };
 
 export async function POST(
@@ -66,6 +69,7 @@ export async function POST(
     quotas: body.filtersOverride ? [] : ((ps.quotas ?? []) as never),
     size: ps.size,
     seed: ps.seed + (body.compareLabel ? body.compareLabel.length : 0),
+    naturalDistribution: body.naturalDistribution,
   });
 
   const seed = ps.seed;
@@ -98,6 +102,7 @@ export async function POST(
     objective: s.objective,
     researchQuestions: (s.researchQuestions ?? []) as string[],
     seed,
+    precisionMode: body.precisionMode,
   };
 
   const { stream, start } = makeStream();
@@ -120,6 +125,17 @@ export async function POST(
       };
 
       const stats = await runVFGI(runContext, emitter);
+
+      // E10 — 종료 후 realism 점수 자동 계산
+      const allEvents = await db
+        .select({ payload: eventTable.payload })
+        .from(eventTable)
+        .where(eq(eventTable.runId, r.id));
+      const eventList = allEvents.map(
+        (e) => e.payload as unknown as FGIEvent
+      );
+      const realismScores = computeRealismScores(eventList, panel);
+
       await db
         .update(run)
         .set({
@@ -128,6 +144,8 @@ export async function POST(
           tokensIn: 0,
           tokensOut: stats.tokens,
           metrics: { speaks: stats.speaks, durationMs: stats.durationMs } as never,
+          realismScores: realismScores as never,
+          precisionMode: body.precisionMode ? "on" : "off",
         })
         .where(eq(run.id, r.id));
     } catch (e) {

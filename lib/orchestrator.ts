@@ -5,6 +5,7 @@ import { pickModel, type ModelOverrides } from "./modelRouter";
 import type { EventEmitter, FGIEvent } from "./eventStream";
 import type { Persona, Stimulus } from "../db/schema";
 import type { Section } from "./guideBuilder";
+import { buildPersonaCard } from "./persona/buildPersonaCard";
 
 export type RunContext = {
   panel: Persona[];
@@ -14,6 +15,7 @@ export type RunContext = {
   researchQuestions: string[];
   models?: ModelOverrides;
   seed?: number;
+  precisionMode?: boolean; // E9 — 자기검증 옵션
 };
 
 async function loadSystem(): Promise<string> {
@@ -21,19 +23,10 @@ async function loadSystem(): Promise<string> {
   return readFile(file, "utf8");
 }
 
-function panelBlock(panel: Persona[]): string {
+function panelBlock(panel: Persona[], stimulusKind: string): string {
   return panel
-    .map((p) => {
-      const f = (p.fields ?? {}) as Record<string, unknown>;
-      const summary =
-        (f["persona"] as string) ??
-        (f["summary"] as string) ??
-        `${p.sex} ${p.age}세 ${p.occupation}`;
-      return `[${p.id}] ${p.name} / ${p.sex} ${p.age}세 / ${p.province} ${p.district} / ${p.occupation}
-- 가족: ${p.familyType ?? "-"} | 주거: ${p.housingType ?? "-"} | 학력: ${p.educationLevel ?? "-"}
-- 요약: ${summary}`;
-    })
-    .join("\n\n");
+    .map((p) => `### [${p.id}] ${p.name}\n${buildPersonaCard(p, stimulusKind)}`)
+    .join("\n\n--------------------------------------------------\n\n");
 }
 
 function sectionsBlock(sections: Section[]): string {
@@ -64,9 +57,20 @@ ${ctx.researchQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n") || "(없음)"
 ${sectionsBlock(ctx.guide.sections)}
 
 # 패널 (총 ${ctx.panel.length}명)
-${panelBlock(ctx.panel)}
 
-지금부터 vFGI를 시작하세요. 패널은 본인 페르소나에 일관되게 답해야 합니다. 첫 출력은 {"type":"section","key":"<첫섹션 key>",...} 으로 시작합니다.`;
+각 패널은 아래 페르소나 카드의 모든 레이어(직업·가족·취미·여행·음식·문화 + 시군구 컨텍스트 + 어조 가이드 + 금융 행동 합성 + 교호작용 보정) 를 발화에 일관되게 반영해야 합니다.
+
+${panelBlock(ctx.panel, ctx.stimulus.kind)}
+
+# 진행 원칙 (강제)
+
+- 첫 섹션(warmup) 에서 각 패널은 자기소개 1회 — "이름·지역·직업·요즘 한 장면(페르소나 카드의 디테일 인용)".
+- 모든 발화는 본인 페르소나의 가족·일·금융 컨텍스트 디테일을 자연스럽게 1~2회 인용.
+- 각 섹션마다 패널 간 cross-talk 최소 1회 (반박 또는 보완).
+- 어조는 페르소나 카드의 [어조 가이드] 를 따르되 과장하지 않음.
+${ctx.precisionMode ? "- [정밀 모드] 발화 후 페르소나 카드와 모순되는 점이 있는지 자기검증하고, 모순 발견 시 발화 수정." : ""}
+
+지금부터 vFGI를 시작하세요. 첫 출력은 {"type":"section","key":"<첫섹션 key>",...} 으로 시작합니다.`;
 }
 
 function tryParseLine(line: string): FGIEvent | null {
