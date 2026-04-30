@@ -10,7 +10,7 @@ import {
   persona,
 } from "@/db/schema";
 import { eq, desc, inArray } from "drizzle-orm";
-import { samplePanel } from "@/lib/personaSampler";
+import { samplePanel, type PanelFilters } from "@/lib/personaSampler";
 import { runVFGI, type RunContext } from "@/lib/orchestrator";
 import { makeStream } from "@/lib/eventStream";
 import { modelTagsForRun } from "@/lib/modelRouter";
@@ -19,11 +19,18 @@ import crypto from "node:crypto";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
+type RunBody = {
+  filtersOverride?: PanelFilters;
+  compareGroup?: string;
+  compareLabel?: string;
+};
+
 export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> }
 ) {
   const { id: studyId } = await ctx.params;
+  const body = (await req.json().catch(() => ({}))) as RunBody;
 
   const [s] = await db.select().from(study).where(eq(study.id, studyId));
   if (!s) return new Response("study not found", { status: 404 });
@@ -53,11 +60,12 @@ export async function POST(
     });
   }
 
+  const filters = body.filtersOverride ?? (ps.filters as PanelFilters);
   const panel = await samplePanel({
-    filters: ps.filters as never,
-    quotas: (ps.quotas ?? []) as never,
+    filters,
+    quotas: body.filtersOverride ? [] : ((ps.quotas ?? []) as never),
     size: ps.size,
-    seed: ps.seed,
+    seed: ps.seed + (body.compareLabel ? body.compareLabel.length : 0),
   });
 
   const seed = ps.seed;
@@ -78,6 +86,8 @@ export async function POST(
       promptHash,
       status: "running",
       startedAt: new Date(),
+      compareGroup: body.compareGroup ?? null,
+      compareLabel: body.compareLabel ?? null,
     })
     .returning();
 

@@ -5,6 +5,7 @@ import { run, event as eventTable, persona, insight as insightTable } from "@/db
 import { asc, eq, inArray } from "drizzle-orm";
 import { EventList, type DisplayEvent } from "@/components/EventStream";
 import AnalyzeButton from "@/components/AnalyzeButton";
+import TrustDisclosure from "@/components/TrustDisclosure";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,8 @@ export default async function RunReplay({
         </div>
       )}
 
+      <TrustDisclosure variant="banner" />
+
       <section className="rounded-2xl border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-4 space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-sm">AI 심층 분석</h2>
@@ -81,18 +84,45 @@ export default async function RunReplay({
           </p>
         ) : (
           <div className="space-y-2">
-            <p className="text-xs text-zinc-500">{insights.length}개 인사이트 추출됨</p>
-            <ul className="space-y-1 text-sm">
+            <p className="text-xs text-zinc-500">{insights.length}개 인사이트 추출됨 — 클릭하면 근거 발언이 펼쳐집니다</p>
+            <ul className="space-y-2 text-sm">
               {insights.map((i) => (
-                <li key={i.id} className="rounded-lg bg-white dark:bg-zinc-900 px-3 py-2">
-                  <span className="font-semibold mr-2">[{i.segment}]</span>
-                  {i.theme}
+                <details key={i.id} className="rounded-lg bg-white dark:bg-zinc-900 px-3 py-2">
+                  <summary className="cursor-pointer">
+                    <span className="font-semibold mr-2">[{i.segment}]</span>
+                    {i.theme}
+                    <span className="ml-2 text-xs text-zinc-400">
+                      strength {Number(i.strength).toFixed(2)} · 근거 {(i.evidenceTexts ?? []).length}건
+                    </span>
+                  </summary>
                   {i.quote && (
-                    <div className="text-xs italic text-zinc-600 dark:text-zinc-400 mt-1">
+                    <div className="text-xs italic text-zinc-600 dark:text-zinc-400 mt-2 border-l-2 border-amber-400 pl-3">
                       "{i.quote}"
                     </div>
                   )}
-                </li>
+                  {(i.evidenceTexts ?? []).length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+                        근거 발언 ({(i.evidenceTexts ?? []).length}건)
+                      </div>
+                      <ul className="space-y-1">
+                        {(i.evidenceTexts ?? []).map((t, idx) => (
+                          <li
+                            key={idx}
+                            className="text-xs bg-amber-50 dark:bg-amber-950/30 border-l-2 border-amber-400 pl-3 py-1"
+                          >
+                            "{t}"
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {i.personaIds && i.personaIds.length > 0 && (
+                    <div className="mt-2 text-[10px] text-zinc-500">
+                      패널: {i.personaIds.map((id) => personaById[id]?.name ?? id).join(", ")}
+                    </div>
+                  )}
+                </details>
               ))}
             </ul>
           </div>
@@ -102,6 +132,8 @@ export default async function RunReplay({
       <section>
         <EventList events={events} personaById={personaById} />
       </section>
+
+      <TrustDisclosure variant="full" />
     </main>
   );
 }

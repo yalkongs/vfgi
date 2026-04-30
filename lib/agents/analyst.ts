@@ -10,6 +10,7 @@ const InsightSchema = z.object({
   quote: z.string().optional(),
   strength: z.number(),
   personaIds: z.array(z.string()),
+  evidenceTexts: z.array(z.string()).optional(),
 });
 
 const AnalysisSchema = z.object({
@@ -47,7 +48,9 @@ const SYSTEM = `당신은 정성조사 분석가입니다. 가상 포커스 그�
 원칙:
 - 한국어로 작성
 - 패널 발언 외 추측 금지
-- 마케팅 미사여구 금지`;
+- 마케팅 미사여구 금지
+- 각 insight 마다 evidenceTexts 에 그 결론을 뒷받침한 실제 발언 1~3개를 원문 그대로 포함 (출처 추적용)
+- personaIds 는 그 발언을 한 패널의 ID 그대로`;
 
 export async function analyzeRun(
   events: FGIEvent[],

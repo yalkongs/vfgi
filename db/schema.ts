@@ -176,11 +176,14 @@ export const run = pgTable(
     tokensIn: integer("tokens_in").default(0),
     tokensOut: integer("tokens_out").default(0),
     error: text("error"),
+    compareGroup: uuid("compare_group"),
+    compareLabel: text("compare_label"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
     index("run_study_idx").on(t.studyId),
     index("run_status_idx").on(t.status),
+    index("run_compare_group_idx").on(t.compareGroup),
   ]
 );
 
@@ -207,6 +210,7 @@ export const insight = pgTable(
     quote: text("quote"),
     strength: numeric("strength", { precision: 3, scale: 2 }).default("0"),
     personaIds: text("persona_ids").array().default([]),
+    evidenceTexts: text("evidence_texts").array().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index("insight_run_idx").on(t.runId)]
@@ -225,13 +229,36 @@ export const report = pgTable(
   (t) => [index("report_run_idx").on(t.runId)]
 );
 
-export const calibration = pgTable("calibration", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  studyId: uuid("study_id").notNull().references(() => study.id, { onDelete: "cascade" }),
-  realFgiSummary: jsonb("real_fgi_summary").$type<Record<string, unknown>>().default({}),
-  deltas: jsonb("deltas").$type<Record<string, unknown>>().default({}),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const calibration = pgTable(
+  "calibration",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    studyId: uuid("study_id").notNull().references(() => study.id, { onDelete: "cascade" }),
+    runId: uuid("run_id").references(() => run.id, { onDelete: "set null" }),
+    title: text("title").notNull().default("외부 FGI 비교"),
+    realFgiSummary: jsonb("real_fgi_summary").$type<{
+      source?: string;
+      conductedAt?: string;
+      panelDescription?: string;
+      keyFindings?: string[];
+      acceptance?: number;
+      drivers?: string[];
+      barriers?: string[];
+      rawText?: string;
+    }>().default({}),
+    deltas: jsonb("deltas").$type<{
+      acceptanceDelta?: number;
+      agreementPct?: number;
+      sharedDrivers?: string[];
+      sharedBarriers?: string[];
+      gaps?: string[];
+      verdict?: string;
+      analysis?: string;
+    }>().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("calibration_study_idx").on(t.studyId)]
+);
 
 export const savedSegment = pgTable("saved_segment", {
   id: uuid("id").defaultRandom().primaryKey(),

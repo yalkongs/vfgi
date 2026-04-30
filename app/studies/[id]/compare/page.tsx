@@ -46,10 +46,23 @@ export default async function ComparePage({
         <Link href={`/studies/${studyId}`} className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
           ← {s.title}
         </Link>
-        <h1 className="text-xl font-semibold tracking-tight">A/B 비교</h1>
-        <p className="text-xs text-zinc-500">
-          A=<span className="font-mono">{aId.slice(0, 8)}</span> · B=<span className="font-mono">{bId.slice(0, 8)}</span>
-        </p>
+        {ra.compareGroup && ra.compareGroup === rb.compareGroup ? (
+          <>
+            <h1 className="text-xl font-semibold tracking-tight">
+              권역 비교 — {ra.compareLabel ?? "A"} vs {rb.compareLabel ?? "B"}
+            </h1>
+            <p className="text-xs text-zinc-500">
+              동일 자극물·동일 가이드, 두 권역 패널 비교
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-xl font-semibold tracking-tight">A/B 비교</h1>
+            <p className="text-xs text-zinc-500">
+              A=<span className="font-mono">{aId.slice(0, 8)}</span> · B=<span className="font-mono">{bId.slice(0, 8)}</span>
+            </p>
+          </>
+        )}
       </header>
 
       <section className="grid grid-cols-2 gap-4">
@@ -131,7 +144,9 @@ function RunCard({ title, run: r }: { title: string; run: ReturnType<typeof summ
   return (
     <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Run {title}</h3>
+        <h3 className="font-semibold">
+          {r.run.compareLabel ? `${title}: ${r.run.compareLabel}` : `Run ${title}`}
+        </h3>
         <span className="text-xs text-zinc-500">seed {r.run.seed}</span>
       </div>
       <p className="text-xs text-zinc-500 font-mono">{r.run.id}</p>
