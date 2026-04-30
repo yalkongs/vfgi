@@ -10,6 +10,7 @@ import TrustDisclosure from "@/components/TrustDisclosure";
 import PersonaAudit from "@/components/PersonaAudit";
 import CalibrationPanel from "@/components/CalibrationPanel";
 import StudyDeleteButton from "@/components/StudyDeleteButton";
+import GuideAutoGenerate from "@/components/GuideAutoGenerate";
 import { buildAuditReport } from "@/lib/personaAudit";
 import { calibration } from "@/db/schema";
 
@@ -57,15 +58,16 @@ export default async function StudyDetail({
     .orderBy(desc(calibration.createdAt))
     .limit(10);
 
-  const previewPanel =
-    ps && stim && g
-      ? await samplePanel({
-          filters: ps.filters as never,
-          quotas: (ps.quotas ?? []) as never,
-          size: ps.size,
-          seed: ps.seed,
-        })
-      : [];
+  const previewPanel = ps
+    ? await samplePanel({
+        filters: ps.filters as never,
+        quotas: (ps.quotas ?? []) as never,
+        size: ps.size,
+        seed: ps.seed,
+      })
+    : [];
+
+  const missingGuide = !g;
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10 space-y-8">
@@ -137,6 +139,17 @@ export default async function StudyDetail({
           ))}
         </div>
       </section>
+
+      {missingGuide && stim && (
+        <GuideAutoGenerate
+          studyId={s.id}
+          stimulusKind={stim.kind}
+          stimulusTitle={stim.title}
+          stimulusBody={stim.body}
+          objective={s.objective}
+          researchQuestions={(s.researchQuestions ?? []) as string[]}
+        />
+      )}
 
       {g && (
         <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-3">
