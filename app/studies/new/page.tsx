@@ -89,6 +89,15 @@ export default function NewStudyPage() {
   }
 
   async function submit() {
+    if (!guideSections) {
+      const ok = window.confirm(
+        "질문 가이드를 아직 생성하지 않았습니다.\n\n가이드 없이 만들면 vFGI 인터뷰를 시작할 수 없습니다.\n\n그래도 진행하시겠습니까?\n(상세 화면에서 추후 자동 생성도 가능합니다)"
+      );
+      if (!ok) {
+        setStep(4);
+        return;
+      }
+    }
     setSubmitting(true);
     setError(null);
     try {

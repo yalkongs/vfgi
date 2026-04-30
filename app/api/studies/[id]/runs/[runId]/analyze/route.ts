@@ -47,6 +47,7 @@ export async function POST(
           quote: i.quote ?? null,
           strength: String(i.strength),
           personaIds: i.personaIds,
+          evidenceTexts: i.evidenceTexts ?? [],
         }))
       );
     }

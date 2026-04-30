@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, inArray, sql, type SQL } from "drizzle-orm";
+import { and, gte, lte, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "../db/client";
 import { persona, type Persona } from "../db/schema";
 
@@ -11,6 +11,38 @@ export type PanelFilters = {
   occupationKeywords?: string[];
   educationLevels?: string[];
 };
+
+// Nemotron-Personas-Korea 데이터셋의 province 표기와 일반 약칭 간 alias.
+// DB 는 "경상북"·"경상남"·"충청북"·"충청남"·"전라남" 같이 저장될 수 있음.
+const PROVINCE_ALIASES: Record<string, string[]> = {
+  경북: ["경북", "경상북", "경상북도"],
+  경남: ["경남", "경상남", "경상남도"],
+  충북: ["충북", "충청북", "충청북도"],
+  충남: ["충남", "충청남", "충청남도"],
+  전북: ["전북", "전라북", "전라북도"],
+  전남: ["전남", "전라남", "전라남도"],
+  서울: ["서울", "서울특별시"],
+  부산: ["부산", "부산광역시"],
+  대구: ["대구", "대구광역시"],
+  인천: ["인천", "인천광역시"],
+  광주: ["광주", "광주광역시"],
+  대전: ["대전", "대전광역시"],
+  울산: ["울산", "울산광역시"],
+  세종: ["세종", "세종특별자치시"],
+  경기: ["경기", "경기도"],
+  강원: ["강원", "강원도", "강원특별자치도"],
+  제주: ["제주", "제주특별자치도"],
+};
+
+export function expandProvinces(input: string[]): string[] {
+  const out = new Set<string>();
+  for (const p of input) {
+    out.add(p);
+    const aliases = PROVINCE_ALIASES[p];
+    if (aliases) for (const a of aliases) out.add(a);
+  }
+  return Array.from(out);
+}
 
 export type Quota = { key: string; values: Record<string, number> };
 
@@ -48,7 +80,7 @@ export async function samplePanel(input: SampleInput): Promise<Persona[]> {
   const conditions: SQL[] = [];
 
   if (filters.province && filters.province.length > 0) {
-    conditions.push(inArray(persona.province, filters.province));
+    conditions.push(inArray(persona.province, expandProvinces(filters.province)));
   }
   if (filters.district && filters.district.length > 0) {
     conditions.push(inArray(persona.district, filters.district));
@@ -131,6 +163,10 @@ function matchesProvinceBucket(p: Persona, bucket: string): boolean {
     부울경: ["부산", "울산", "경남"],
     강원제주: ["강원", "제주"],
   };
-  if (groups[bucket]) return groups[bucket].some((g) => p.province.startsWith(g));
-  return p.province === bucket;
+  if (groups[bucket]) {
+    const expanded = expandProvinces(groups[bucket]);
+    return expanded.some((g) => p.province === g || p.province.startsWith(g));
+  }
+  const aliases = expandProvinces([bucket]);
+  return aliases.some((a) => p.province === a || p.province.startsWith(a));
 }

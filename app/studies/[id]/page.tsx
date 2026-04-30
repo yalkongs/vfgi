@@ -5,6 +5,14 @@ import { study, stimulus, panelSpec, guide, run, persona } from "@/db/schema";
 import { eq, desc, inArray } from "drizzle-orm";
 import { samplePanel } from "@/lib/personaSampler";
 import RunRunner from "@/components/RunRunner";
+import RegionCompareRunner from "@/components/RegionCompareRunner";
+import TrustDisclosure from "@/components/TrustDisclosure";
+import PersonaAudit from "@/components/PersonaAudit";
+import CalibrationPanel from "@/components/CalibrationPanel";
+import StudyDeleteButton from "@/components/StudyDeleteButton";
+import GuideAutoGenerate from "@/components/GuideAutoGenerate";
+import { buildAuditReport } from "@/lib/personaAudit";
+import { calibration } from "@/db/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -43,22 +51,33 @@ export default async function StudyDetail({
     .orderBy(desc(run.createdAt))
     .limit(20);
 
-  const previewPanel =
-    ps && stim && g
-      ? await samplePanel({
-          filters: ps.filters as never,
-          quotas: (ps.quotas ?? []) as never,
-          size: ps.size,
-          seed: ps.seed,
-        })
-      : [];
+  const calRows = await db
+    .select()
+    .from(calibration)
+    .where(eq(calibration.studyId, id))
+    .orderBy(desc(calibration.createdAt))
+    .limit(10);
+
+  const previewPanel = ps
+    ? await samplePanel({
+        filters: ps.filters as never,
+        quotas: (ps.quotas ?? []) as never,
+        size: ps.size,
+        seed: ps.seed,
+      })
+    : [];
+
+  const missingGuide = !g;
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10 space-y-8">
       <header className="space-y-2">
-        <Link href="/studies" className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
-          ← vFGI 목록
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/studies" className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+            ← vFGI 목록
+          </Link>
+          <StudyDeleteButton studyId={s.id} studyTitle={s.title} />
+        </div>
         <h1 className="text-2xl font-semibold tracking-tight">{s.title}</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">{s.objective}</p>
         {s.researchQuestions && s.researchQuestions.length > 0 && (
@@ -121,6 +140,17 @@ export default async function StudyDetail({
         </div>
       </section>
 
+      {missingGuide && stim && (
+        <GuideAutoGenerate
+          studyId={s.id}
+          stimulusKind={stim.kind}
+          stimulusTitle={stim.title}
+          stimulusBody={stim.body}
+          objective={s.objective}
+          researchQuestions={(s.researchQuestions ?? []) as string[]}
+        />
+      )}
+
       {g && (
         <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-3">
           <h2 className="font-semibold">진행자 질문 가이드 ({g.sections.length}섹션 · {g.source === "auto" ? "AI 자동 생성" : g.source})</h2>
@@ -141,8 +171,14 @@ export default async function StudyDetail({
         </section>
       )}
 
+      {previewPanel.length > 0 && (
+        <PersonaAudit audit={buildAuditReport(previewPanel)} />
+      )}
+
+      <TrustDisclosure variant="banner" />
+
       <section className="rounded-2xl border-2 border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/10 p-5">
-        <h2 className="font-semibold mb-3">▶ vFGI 실행</h2>
+        <h2 className="font-semibold mb-3">▶ vFGI 단일 실행</h2>
         <p className="text-xs text-zinc-500 mb-3">
           참여자는{" "}
           <a
@@ -157,6 +193,24 @@ export default async function StudyDetail({
         </p>
         <RunRunner studyId={s.id} panel={previewPanel} />
       </section>
+
+      <RegionCompareRunner
+        studyId={s.id}
+        panelById={Object.fromEntries(previewPanel.map((p) => [p.id, p]))}
+      />
+
+      <CalibrationPanel
+        studyId={s.id}
+        recentRun={runs[0] ? { id: runs[0].id, createdAt: runs[0].createdAt } : null}
+        initialCalibrations={calRows.map((c) => ({
+          id: c.id,
+          title: c.title,
+          createdAt: c.createdAt,
+          realFgiSummary: (c.realFgiSummary ?? {}) as Record<string, unknown>,
+          deltas: (c.deltas ?? {}) as never,
+          runId: c.runId,
+        }))}
+      />
 
       {runs.length > 0 && (
         <section className="space-y-3">
