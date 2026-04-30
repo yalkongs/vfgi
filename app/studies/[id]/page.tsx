@@ -9,6 +9,7 @@ import RegionCompareRunner from "@/components/RegionCompareRunner";
 import TrustDisclosure from "@/components/TrustDisclosure";
 import PersonaAudit from "@/components/PersonaAudit";
 import CalibrationPanel from "@/components/CalibrationPanel";
+import StudyDeleteButton from "@/components/StudyDeleteButton";
 import { buildAuditReport } from "@/lib/personaAudit";
 import { calibration } from "@/db/schema";
 
@@ -69,9 +70,12 @@ export default async function StudyDetail({
   return (
     <main className="mx-auto max-w-5xl px-6 py-10 space-y-8">
       <header className="space-y-2">
-        <Link href="/studies" className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
-          ← vFGI 목록
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/studies" className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+            ← vFGI 목록
+          </Link>
+          <StudyDeleteButton studyId={s.id} studyTitle={s.title} />
+        </div>
         <h1 className="text-2xl font-semibold tracking-tight">{s.title}</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">{s.objective}</p>
         {s.researchQuestions && s.researchQuestions.length > 0 && (

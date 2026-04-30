@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   EventList,
@@ -86,10 +86,17 @@ export default function RegionCompareRunner({
 
   async function start() {
     setRunning(true);
+    setA({ label: labelA, events: [], done: false });
+    setB({ label: labelB, events: [], done: false });
     const compareGroup =
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
-        : `cmp-${Date.now()}`;
+        : // pseudo-uuid v4-like (fallback for unsupported runtimes)
+          ("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          }) as string);
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -128,13 +135,18 @@ export default function RegionCompareRunner({
     } finally {
       setRunning(false);
       abortRef.current = null;
-      const idA = (await Promise.resolve(a.runId)) ?? a.runId;
-      const idB = (await Promise.resolve(b.runId)) ?? b.runId;
-      if (idA && idB) {
-        router.push(`/studies/${studyId}/compare?a=${idA}&b=${idB}`);
-      }
     }
   }
+
+  // 두 권역 모두 끝나면 자동 비교 페이지로
+  useEffect(() => {
+    if (!running && a.done && b.done && a.runId && b.runId && !a.error && !b.error) {
+      const t = setTimeout(() => {
+        router.push(`/studies/${studyId}/compare?a=${a.runId}&b=${b.runId}`);
+      }, 800);
+      return () => clearTimeout(t);
+    }
+  }, [running, a.done, b.done, a.runId, b.runId, a.error, b.error, studyId, router]);
 
   function stop() {
     abortRef.current?.abort();

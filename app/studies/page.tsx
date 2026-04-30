@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/db/client";
 import { study } from "@/db/schema";
 import { desc } from "drizzle-orm";
+import StudyDeleteButton from "@/components/StudyDeleteButton";
 
 export const dynamic = "force-dynamic";
 
@@ -36,36 +37,43 @@ export default async function StudiesPage() {
       ) : (
         <div className="grid gap-3">
           {rows.map((s) => (
-            <Link
+            <div
               key={s.id}
-              href={`/studies/${s.id}`}
-              className="block rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4 hover:border-emerald-500"
+              className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-emerald-500 transition flex"
             >
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="font-medium">{s.title}</div>
-                <div className="flex items-center gap-2 text-xs">
-                  <Status status={s.status} />
-                  <span className="text-zinc-400">
-                    {new Date(s.createdAt).toLocaleString("ko-KR")}
-                  </span>
-                </div>
-              </div>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2">
-                {s.objective}
-              </p>
-              {s.tags && s.tags.length > 0 && (
-                <div className="mt-2 flex gap-1.5 flex-wrap">
-                  {s.tags.map((t) => (
-                    <span
-                      key={t}
-                      className="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-xs"
-                    >
-                      {t}
+              <Link
+                href={`/studies/${s.id}`}
+                className="flex-1 px-5 py-4 min-w-0"
+              >
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="font-medium truncate">{s.title}</div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Status status={s.status} />
+                    <span className="text-zinc-400">
+                      {new Date(s.createdAt).toLocaleString("ko-KR")}
                     </span>
-                  ))}
+                  </div>
                 </div>
-              )}
-            </Link>
+                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2">
+                  {s.objective}
+                </p>
+                {s.tags && s.tags.length > 0 && (
+                  <div className="mt-2 flex gap-1.5 flex-wrap">
+                    {s.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-xs"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </Link>
+              <div className="flex items-center px-3 border-l border-zinc-100 dark:border-zinc-800">
+                <StudyDeleteButton studyId={s.id} studyTitle={s.title} />
+              </div>
+            </div>
           ))}
         </div>
       )}
