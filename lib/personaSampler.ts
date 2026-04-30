@@ -51,6 +51,7 @@ export type SampleInput = {
   quotas?: Quota[];
   size: number;
   seed?: number;
+  naturalDistribution?: boolean; // E4 — quota 강제 대신 PGM 자연 분포 따르기
 };
 
 function mulberry32(seed: number) {
@@ -117,7 +118,8 @@ export async function samplePanel(input: SampleInput): Promise<Persona[]> {
 
   const pool = shuffle(candidates, rand);
 
-  if (!input.quotas || input.quotas.length === 0) {
+  // E4 natural 모드: PGM(데이터셋 자체 분포) 그대로 따라 size 만큼만 셔플 추출
+  if (input.naturalDistribution || !input.quotas || input.quotas.length === 0) {
     return pool.slice(0, input.size);
   }
 

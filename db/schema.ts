@@ -178,6 +178,14 @@ export const run = pgTable(
     error: text("error"),
     compareGroup: uuid("compare_group"),
     compareLabel: text("compare_label"),
+    realismScores: jsonb("realism_scores").$type<{
+      dcs?: number;
+      ldi?: number;
+      rds?: number;
+      sas?: number;
+      computedAt?: string;
+    }>().default({}),
+    precisionMode: text("precision_mode").default("off"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [

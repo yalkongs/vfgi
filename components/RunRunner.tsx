@@ -19,6 +19,8 @@ export default function RunRunner({
   const [events, setEvents] = useState<DisplayEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [runId, setRunId] = useState<string | null>(null);
+  const [precisionMode, setPrecisionMode] = useState(false);
+  const [naturalDistribution, setNaturalDistribution] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const personaById = useMemo(
@@ -37,6 +39,7 @@ export default function RunRunner({
       const res = await fetch(`/api/studies/${studyId}/runs`, {
         method: "POST",
         headers: { "content-type": "application/json" },
+        body: JSON.stringify({ precisionMode, naturalDistribution }),
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
@@ -73,6 +76,26 @@ export default function RunRunner({
 
   return (
     <section className="space-y-4">
+      <div className="flex items-center gap-4 flex-wrap">
+        <label className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={precisionMode}
+            onChange={(e) => setPrecisionMode(e.target.checked)}
+            disabled={running}
+          />
+          정밀 모드 (E9 자기검증, 비용 ↑)
+        </label>
+        <label className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={naturalDistribution}
+            onChange={(e) => setNaturalDistribution(e.target.checked)}
+            disabled={running}
+          />
+          자연 분포 (E4, 권역 쿼터 무시)
+        </label>
+      </div>
       <div className="flex items-center gap-3">
         <button
           type="button"

@@ -6,6 +6,8 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { EventList, type DisplayEvent } from "@/components/EventStream";
 import AnalyzeButton from "@/components/AnalyzeButton";
 import TrustDisclosure from "@/components/TrustDisclosure";
+import RealismGauge from "@/components/RealismGauge";
+import type { RealismScores } from "@/lib/agents/realismJudge";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +74,10 @@ export default async function RunReplay({
       )}
 
       <TrustDisclosure variant="banner" />
+
+      {r.realismScores && Object.keys(r.realismScores).length > 0 && (
+        <RealismGauge scores={r.realismScores as RealismScores} />
+      )}
 
       <section className="rounded-2xl border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-4 space-y-2">
         <div className="flex items-center justify-between">
