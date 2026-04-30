@@ -301,5 +301,7 @@ export type NewRun = typeof run.$inferInsert;
 export type Event = typeof event.$inferSelect;
 export type Guide = typeof guide.$inferSelect;
 export type Insight = typeof insight.$inferSelect;
+export type Calibration = typeof calibration.$inferSelect;
+export type Report = typeof report.$inferSelect;
 
 export const _ensure = sql`select 1`;

@@ -76,7 +76,19 @@ export default async function StudyDetail({
           <Link href="/studies" className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
             ← vFGI 목록
           </Link>
-          <StudyDeleteButton studyId={s.id} studyTitle={s.title} />
+          <div className="flex items-center gap-2">
+            {runs.length > 0 && (
+              <a
+                href={`/api/reports/study/${s.id}/pdf`}
+                target="_blank"
+                rel="noopener"
+                className="text-xs px-3 py-1 rounded-full bg-emerald-600 text-white font-medium hover:bg-emerald-700"
+              >
+                📄 통합 임원 보고서 PDF
+              </a>
+            )}
+            <StudyDeleteButton studyId={s.id} studyTitle={s.title} />
+          </div>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">{s.title}</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">{s.objective}</p>
